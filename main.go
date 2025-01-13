@@ -16,6 +16,9 @@ func main() {
 	flag.Parse()
 
 	log.Println("Full text search is in progress")
+	
+	utils.RunPipeline()
+	defer utils.ClosePipeline()
 
 	start := time.Now()
 

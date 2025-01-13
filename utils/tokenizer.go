@@ -5,6 +5,27 @@ import (
 	"unicode"
 )
 
+var (
+	done            chan int
+	pipeline        chan []string
+	lowercaseStream <-chan []string
+	stopWordStream  <-chan []string
+	stemmerStream   <-chan []string
+)
+
+func RunPipeline() {
+	pipeline = make(chan []string)
+	done = make(chan int)
+	lowercaseStream = lowercaseFilterStream(done, pipeline)
+	stopWordStream = stopWordFilterStream(done, lowercaseStream)
+	stemmerStream = stemmerFilterStream(done, stopWordStream)
+}
+
+func ClosePipeline() {
+	close(pipeline)
+	close(done)
+}
+
 func tokenize(text string) []string {
 	return strings.FieldsFunc(text, func(r rune) bool {
 		return !unicode.IsLetter(r) && !unicode.IsNumber(r)
@@ -12,11 +33,7 @@ func tokenize(text string) []string {
 }
 
 func analyze(text string) []string {
-	tokens := tokenize(text)
+	pipeline <- tokenize(text)
 
-	tokens = lowercaseFilter(tokens)
-	tokens = stopWordFilter(tokens)
-	tokens = stemmerFilter(tokens)
-
-	return tokens
+	return <-stemmerStream
 }
